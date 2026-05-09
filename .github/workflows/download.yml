@@ -1,10 +1,10 @@
-name: 🌐 Universal Downloader (by GitHub Actions)
+name: 🌐 Universal Downloader (با هدرهای صحیح)
 
 on:
   workflow_dispatch:
     inputs:
       download_url:
-        description: '🔗 Direct File Link (Anime, Video, etc.)'
+        description: '🔗 لینک فایل (مثل انیمه، فیلم، موزیک)'
         required: true
         type: string
 
@@ -18,13 +18,14 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: ⬇️ Download File
+      - name: ⬇️ Download with proper headers
         run: |
           mkdir -p downloads
           LINK="${{ github.event.inputs.download_url }}"
           FILENAME=$(basename "$LINK")
           curl -L --retry 5 --retry-delay 10 \
-               -H "User-Agent: Mozilla/5.0" \
+               -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+               -H "Referer: https://tools.irbots.com/" \
                -o "downloads/$FILENAME" "$LINK"
           echo "FILE_NAME=$FILENAME" >> $GITHUB_ENV
 
@@ -33,5 +34,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "action@github.com"
           git add downloads/
-          git commit -m "📦 Add ${{ env.FILE_NAME }}" || echo "No changes to commit"
+          git commit -m "📦 Add ${{ env.FILE_NAME }}" || echo "No changes"
           git push
