@@ -1,38 +1,28 @@
-name: 🌐 Universal Downloader (با هدرهای صحیح)
+name: 🌐 Download to Artifact
 
 on:
   workflow_dispatch:
     inputs:
       download_url:
-        description: '🔗 لینک فایل (مثل انیمه، فیلم، موزیک)'
+        description: '🔗 لینک فایل'
         required: true
         type: string
 
 jobs:
   download:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
-      - name: ⬇️ Download with proper headers
+      - name: ⬇️ دانلود فایل
         run: |
           mkdir -p downloads
-          LINK="${{ github.event.inputs.download_url }}"
-          FILENAME=$(basename "$LINK")
-          curl -L --retry 5 --retry-delay 10 \
-               -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+          curl -L -H "User-Agent: Mozilla/5.0" \
                -H "Referer: https://tools.irbots.com/" \
-               -o "downloads/$FILENAME" "$LINK"
-          echo "FILE_NAME=$FILENAME" >> $GITHUB_ENV
+               -o "downloads/$(basename "${{ github.event.inputs.download_url }}")" \
+               "${{ github.event.inputs.download_url }}"
 
-      - name: 📤 Commit & Push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "action@github.com"
-          git add downloads/
-          git commit -m "📦 Add ${{ env.FILE_NAME }}" || echo "No changes"
-          git push
+      - name: 📦 آپلود به عنوان Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: فایل-دانلودی
+          path: downloads/
+          retention-days: 7
