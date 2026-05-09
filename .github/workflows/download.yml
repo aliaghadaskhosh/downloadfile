@@ -1,32 +1,39 @@
-name: 📥 Download to Repository
+name: 📥 دانلود و تقسیم فایل بزرگ
 
 on:
   workflow_dispatch:
     inputs:
       file_url:
-        description: 'لینک فایل'
+        description: '🔗 لینک فایل (انیمه/فیلم)'
         required: true
         type: string
 
 jobs:
-  save_file:
+  split-and-save:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: 📂 دریافت کدها
+      - name: 📂 دریافت کد مخزن
         uses: actions/checkout@v4
 
       - name: ⬇️ دانلود فایل
         run: |
           mkdir -p downloads
-          curl -L -o "downloads/$(basename "${{ github.event.inputs.file_url }}")" \
-               "${{ github.event.inputs.file_url }}"
+          curl -L -o "downloads/original_file" "${{ github.event.inputs.file_url }}"
 
-      - name: 📤 ذخیره در گیت
+      - name: ✂️ تقسیم فایل به بخش‌های ۹۰ مگابایتی
+        run: |
+          cd downloads
+          split -b 90M original_file part_
+          rm original_file
+          cd ..
+          echo "✅ فایل به بخش‌های جداگانه تقسیم شد"
+
+      - name: 📤  ذخیره در مخزن گیت‌هاب
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "action@github.com"
           git add downloads/
-          git commit -m "فایل جدید اضافه شد" || echo "تغییری برای ذخیره وجود ندارد"
-          git push
+          git commit -m "📦 اضافه کردن بخش‌های فایل" || echo "تغییری برای ذخیره وجود ندارد"
+          git push origin main
