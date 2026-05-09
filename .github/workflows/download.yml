@@ -1,28 +1,32 @@
-name: 🌐 Download to Artifact
+name: 📥 Download to Repository
 
 on:
   workflow_dispatch:
     inputs:
-      download_url:
-        description: '🔗 لینک فایل'
+      file_url:
+        description: 'لینک فایل'
         required: true
         type: string
 
 jobs:
-  download:
+  save_file:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+      - name: 📂 دریافت کدها
+        uses: actions/checkout@v4
+
       - name: ⬇️ دانلود فایل
         run: |
           mkdir -p downloads
-          curl -L -H "User-Agent: Mozilla/5.0" \
-               -H "Referer: https://tools.irbots.com/" \
-               -o "downloads/$(basename "${{ github.event.inputs.download_url }}")" \
-               "${{ github.event.inputs.download_url }}"
+          curl -L -o "downloads/$(basename "${{ github.event.inputs.file_url }}")" \
+               "${{ github.event.inputs.file_url }}"
 
-      - name: 📦 آپلود به عنوان Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: فایل-دانلودی
-          path: downloads/
-          retention-days: 7
+      - name: 📤 ذخیره در گیت
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "action@github.com"
+          git add downloads/
+          git commit -m "فایل جدید اضافه شد" || echo "تغییری برای ذخیره وجود ندارد"
+          git push
