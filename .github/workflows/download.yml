@@ -1,15 +1,15 @@
-name: 📥 دانلود و تقسیم فایل بزرگ
+name: 📥 دانلود (با تقسیم شرطی)
 
 on:
   workflow_dispatch:
     inputs:
       file_url:
-        description: '🔗 لینک فایل (انیمه/فیلم)'
+        description: '🔗 لینک فایل'
         required: true
         type: string
 
 jobs:
-  split-and-save:
+  conditional-save:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -22,18 +22,29 @@ jobs:
           mkdir -p downloads
           curl -L -o "downloads/original_file" "${{ github.event.inputs.file_url }}"
 
-      - name: ✂️ تقسیم فایل به بخش‌های ۹۰ مگابایتی
+      - name: 📏 بررسی حجم و تصمیم‌گیری
+        id: check
         run: |
-          cd downloads
-          split -b 90M original_file part_
-          rm original_file
-          cd ..
-          echo "✅ فایل به بخش‌های جداگانه تقسیم شد"
+          SIZE=$(stat -c%s "downloads/original_file")
+          SIZE_MB=$((SIZE / 1024 / 1024))
+          echo "📊 حجم فایل: ${SIZE_MB} MB"
+          if [ $SIZE_MB -lt 90 ]; then
+            echo "✅ فایل زیر ۹۰ مگ است، تقسیم نمی‌شود."
+            mv "downloads/original_file" "downloads/$(basename "${{ github.event.inputs.file_url }}")"
+            echo "SPLIT=no" >> $GITHUB_OUTPUT
+          else
+            echo "✂️ فایل بالای ۹۰ مگ است، تقسیم می‌شود."
+            cd downloads
+            split -b 90M original_file part_
+            rm original_file
+            cd ..
+            echo "SPLIT=yes" >> $GITHUB_OUTPUT
+          fi
 
-      - name: 📤  ذخیره در مخزن گیت‌هاب
+      - name: 📤 ذخیره در مخزن
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "action@github.com"
           git add downloads/
-          git commit -m "📦 اضافه کردن بخش‌های فایل" || echo "تغییری برای ذخیره وجود ندارد"
+          git commit -m "📦 اضافه کردن فایل" || echo "تغییری برای ذخیره وجود ندارد"
           git push origin main
